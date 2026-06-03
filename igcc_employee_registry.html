@@ -138,6 +138,22 @@ select option{background:#fff;}
 .empty-state{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;}
 
 .hidden{display:none!important;}
+
+/* Searchable select */
+.ss-wrap{position:relative;width:100%;}
+.ss-input{width:100%;background:#fff;border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--sans);font-size:14px;padding:10px 12px;outline:none;transition:border-color .15s,box-shadow .15s;cursor:pointer;}
+.ss-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(2,132,199,.12);}
+.ss-input.selected{border-color:var(--success);}
+.ss-input:disabled{background:var(--surface2);color:var(--muted);cursor:not-allowed;}
+.ss-dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1.5px solid var(--accent);border-radius:10px;z-index:9999;display:none;box-shadow:0 4px 12px rgba(0,0,0,.1);}
+.ss-dropdown.open{display:block;}
+.ss-search{width:100%;border:none;border-bottom:1px solid var(--border);padding:8px 12px;font-size:13px;outline:none;border-radius:10px 10px 0 0;font-family:var(--sans);}
+.ss-list{max-height:200px;overflow-y:auto;}
+.ss-option{padding:8px 12px;font-size:13px;color:var(--text);cursor:pointer;border-bottom:1px solid var(--border);}
+.ss-option:last-child{border-bottom:none;}
+.ss-option:hover,.ss-option.active{background:var(--accent-dim);color:var(--accent);}
+.ss-option mark{background:none;color:var(--accent);font-weight:700;}
+.ss-none{padding:8px 12px;font-size:12px;color:var(--muted);font-family:var(--mono);}
 @media(max-width:640px){.field-row.cols-2,.field-row.cols-3,.field-row.cols-4{grid-template-columns:1fr;}.stats-row{grid-template-columns:1fr 1fr;}}
 </style>
 </head>
@@ -176,9 +192,8 @@ select option{background:#fff;}
       </select>
       <select class="filter-select" id="filter-contract" onchange="filterTable()">
         <option value="">All contracts</option>
-        <option>Permanent</option>
+        <option>Rotation</option>
         <option>Fixed-term contract</option>
-        <option>Probation</option>
         <option>Daily Wages</option>
       </select>
       <select class="filter-select" id="filter-status" onchange="filterTable()">
@@ -367,9 +382,8 @@ select option{background:#fff;}
           <label>Contract type <span class="required">*</span></label>
           <select id="emp-contract" onchange="onContractChange();validate()">
             <option value="">Select...</option>
-            <option>Permanent</option>
+            <option>Rotation</option>
             <option>Fixed-term contract</option>
-            <option>Probation</option>
             <option>Daily Wages</option>
           </select>
         </div>
@@ -380,7 +394,12 @@ select option{background:#fff;}
         <div class="field" id="end-date-field">
           <label>Contract end date</label>
           <input type="date" id="emp-end">
-          <span class="field-hint">Required for Fixed-term and Probation</span>
+          <span class="field-hint">Required for Fixed-term contract</span>
+        </div>
+        <div class="field hidden" id="rotation-days-field">
+          <label>Monthly days off <span class="required">*</span></label>
+          <input type="number" id="emp-rotation-days" min="1" max="31" placeholder="e.g. 28" oninput="validate()">
+          <span class="field-hint">Number of days off per month (rotation schedule)</span>
         </div>
       </div>
 
@@ -506,47 +525,231 @@ async function fetchCSVCol(url, col=0) {
     .filter(Boolean);
 }
 
+// ── SEARCHABLE SELECT ─────────────────────────────────────────────────────────
+function buildSearchableSelect(targetEl, items, placeholder='Search...') {
+  // Replace a select element with a searchable input + dropdown
+  const wrap = document.createElement('div');
+  wrap.className = 'ss-wrap';
+  const originalId = targetEl.id;
+
+  wrap.innerHTML = `
+    <input type="text" class="ss-input" id="ss-input-${originalId}"
+      placeholder="${placeholder}" autocomplete="off" readonly
+      onclick="openSS('${originalId}')" onkeydown="navSS(event,'${originalId}')">
+    <input type="hidden" id="${originalId}">
+    <div class="ss-dropdown" id="ss-dd-${originalId}">
+      <input type="text" class="ss-search" id="ss-search-${originalId}"
+        placeholder="Type to search..." oninput="filterSS('${originalId}')">
+      <div class="ss-list" id="ss-list-${originalId}"></div>
+    </div>`;
+
+  targetEl.replaceWith(wrap);
+  wrap._items = items;
+
+  renderSSList(originalId, items, '');
+}
+
+function renderSSList(id, items, q) {
+  const list = document.getElementById(`ss-list-${id}`);
+  if (!list) return;
+  const matches = q ? items.filter(x=>x.toLowerCase().includes(q.toLowerCase())) : items;
+  if (!matches.length) {
+    list.innerHTML = `<div class="ss-none">No match found</div>`;
+    return;
+  }
+  list.innerHTML = matches.map(x => {
+    const hi = q ? x.replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'), '<mark>$1</mark>') : x;
+    return `<div class="ss-option" data-val="${x}" onmousedown="selectSS(event,'${id}','${x.replace(/'/g,"\'")}')"><span>${hi}</span></div>`;
+  }).join('');
+}
+
+function openSS(id) {
+  document.querySelectorAll('.ss-dropdown.open').forEach(d => {
+    if (d.id !== `ss-dd-${id}`) d.classList.remove('open');
+  });
+  const dd = document.getElementById(`ss-dd-${id}`);
+  if (!dd) return;
+  dd.classList.toggle('open');
+  if (dd.classList.contains('open')) {
+    const search = document.getElementById(`ss-search-${id}`);
+    if (search) { search.value=''; setTimeout(()=>search.focus(),50); }
+    const wrap = dd.closest('.ss-wrap');
+    renderSSList(id, wrap?._items||[], '');
+  }
+}
+
+function filterSS(id) {
+  const q    = document.getElementById(`ss-search-${id}`)?.value||'';
+  const wrap = document.getElementById(`ss-dd-${id}`)?.closest('.ss-wrap');
+  renderSSList(id, wrap?._items||[], q);
+}
+
+function selectSS(e, id, val) {
+  e.preventDefault();
+  document.getElementById(`ss-input-${id}`).value = val;
+  document.getElementById(`ss-input-${id}`).classList.add('selected');
+  document.getElementById(id).value = val;
+  document.getElementById(`ss-dd-${id}`).classList.remove('open');
+  validate();
+}
+
+function navSS(e, id) {
+  if (e.key==='Enter'||e.key===' ') { e.preventDefault(); openSS(id); }
+  if (e.key==='Escape') { document.getElementById(`ss-dd-${id}`)?.classList.remove('open'); }
+}
+
+document.addEventListener('click', e => {
+  document.querySelectorAll('.ss-dropdown.open').forEach(dd => {
+    if (!dd.closest('.ss-wrap')?.contains(e.target)) dd.classList.remove('open');
+  });
+});
+
+// ── MASTER LISTS ──────────────────────────────────────────────────────────────
 async function loadMasterLists() {
-  // Positions
-  try {
-    const pos = await fetchCSVCol(CSV_POSITIONS, 0);
-    const sel = document.getElementById('emp-position');
-    sel.innerHTML = '<option value="">Select position...</option>';
-    pos.forEach(p => { const o=document.createElement('option'); o.value=p; o.textContent=p; sel.appendChild(o); });
-    document.getElementById('pos-status').textContent = `✓ ${pos.length} positions loaded`;
-  } catch(e) { document.getElementById('pos-status').textContent = '✗ Could not load'; }
+  // Positions — comprehensive O&G construction list
+  const POSITIONS_LIST = [
+    // Project & Construction Management
+    'Project Director','Project Manager','Deputy Project Manager',
+    'Construction Manager','Deputy Construction Manager',
+    'Site Manager','Resident Engineer','Field Engineer',
+    // Engineering
+    'Civil Engineer','Senior Civil Engineer','Junior Civil Engineer',
+    'Mechanical Engineer','Senior Mechanical Engineer','Junior Mechanical Engineer',
+    'Electrical Engineer','Senior Electrical Engineer','Junior Electrical Engineer',
+    'Instrument Engineer','Senior Instrument Engineer','Junior Instrument Engineer',
+    'Piping Engineer','Senior Piping Engineer',
+    'Structural Engineer','Senior Structural Engineer',
+    'Process Engineer','Senior Process Engineer',
+    'Pipeline Engineer','Subsea Engineer',
+    'Commissioning Engineer','Pre-commissioning Engineer',
+    'Rotating Equipment Engineer','Static Equipment Engineer',
+    'HVAC Engineer','Fire Protection Engineer',
+    'Corrosion Engineer','Materials Engineer',
+    'Welding Engineer','NDT Engineer',
+    // Planning & Cost Control
+    'Planning Manager','Senior Planner','Planner',
+    'Scheduler','Planning Engineer',
+    'Cost Control Manager','Cost Control Lead','Cost Control Engineer',
+    'Cost Control Officer','Quantity Surveyor','Senior Quantity Surveyor',
+    'Estimator','Budget Analyst',
+    // HSE
+    'HSE Manager','HSE Lead','HSE Supervisor',
+    'HSE Officer','Senior HSE Officer','Junior HSE Officer',
+    'Safety Officer','Safety Supervisor',
+    'Environmental Officer','Industrial Hygienist',
+    'Fire Safety Officer','Rescue Team Leader',
+    'First Aider','Medic','Site Nurse','Site Doctor',
+    // Quality
+    'QA/QC Manager','QA Manager','QC Manager',
+    'QA/QC Engineer','QA Engineer','QC Engineer',
+    'QC Inspector','QA Inspector',
+    'Welding Inspector','Piping Inspector',
+    'Civil Inspector','Structural Inspector',
+    'Electrical Inspector','Instrument Inspector',
+    'Painting & Coating Inspector','NDT Technician',
+    'Radiographer','UT Technician','MT Technician',
+    'Laboratory Technician','Calibration Technician',
+    // Supervisors & Foremen
+    'Construction Supervisor','Civil Supervisor','Mechanical Supervisor',
+    'Electrical Supervisor','Instrument Supervisor','Piping Supervisor',
+    'Structural Supervisor','Painting Supervisor','Scaffold Supervisor',
+    'Civil Foreman','Mechanical Foreman','Electrical Foreman',
+    'Instrument Foreman','Piping Foreman','Scaffold Foreman',
+    'Painting Foreman','Insulation Foreman','Concrete Foreman',
+    // Skilled Trades
+    'Welder (GTAW)','Welder (SMAW)','Welder (FCAW)','Welder (SAW)',
+    'Coded Welder','Pipe Welder','Structural Welder',
+    'Pipefitter','Senior Pipefitter','Pipe Fabricator',
+    'Electrician','Senior Electrician','Instrumentation Technician',
+    'Instrument Fitter','Cable Puller','Cable Terminator',
+    'Millwright','Mechanical Technician','Rotating Equipment Technician',
+    'Rigging Supervisor','Rigger Grade 1','Rigger Grade 2','Rigger Grade 3',
+    'Scaffolder','Scaffold Inspector','Scaffold Labourer',
+    'Carpenter','Senior Carpenter','Shuttering Carpenter',
+    'Mason','Bricklayer','Tile Fixer',
+    'Painter','Blaster','Coating Applicator','Insulation Technician',
+    'Heavy Equipment Operator','Crane Operator','Excavator Operator',
+    'Bulldozer Operator','Grader Operator','Forklift Operator',
+    'Concrete Pump Operator','Generator Technician',
+    'Surveyor','Survey Technician','Survey Assistant',
+    // Semi-skilled & General
+    'Semi-skilled Worker','General Labourer','Helper',
+    'Concrete Labourer','Steel Fixer','Rod Bender',
+    // Document Control & Admin
+    'Document Control Manager','Document Controller','Senior Document Controller',
+    'Administrative Manager','Administrator','Admin Assistant',
+    'Timekeeper','HR Officer','HR Assistant','HR Coordinator',
+    'Receptionist','Office Assistant','Data Entry Operator',
+    // Logistics & Warehouse
+    'Logistics Manager','Logistics Coordinator','Logistics Officer',
+    'Warehouse Manager','Warehouse Supervisor','Warehouse Keeper',
+    'Store Keeper','Material Controller','Material Coordinator',
+    'Procurement Officer','Purchasing Officer','Buyer',
+    'Expeditor','Customs Clearance Officer',
+    'Driver','Heavy Driver','Bus Driver','Crew Transport Driver',
+    // IT & Communication
+    'IT Manager','IT Support Engineer','IT Technician',
+    'Telecom Engineer','Radio Operator',
+    // Finance & Accounting
+    'Finance Manager','Finance Officer','Accountant',
+    'Senior Accountant','Junior Accountant','Accounts Assistant',
+    'Payroll Officer','Cashier','Auditor',
+    // Security & Camp
+    'Security Manager','Security Supervisor','Security Guard',
+    'Access Control Officer','CCTV Operator',
+    'Camp Boss','Camp Supervisor','Cook','Assistant Cook',
+    'Housekeeper','Cleaner','Laundry Attendant',
+    // Management
+    'General Manager','Operations Manager','Business Development Manager',
+    'Commercial Manager','Contract Manager','Legal Advisor',
+  ];
+  const posSel = document.getElementById('emp-position');
+  posSel.innerHTML = '';
+  buildSearchableSelect(posSel, POSITIONS_LIST, 'Search position...');
+  document.getElementById('pos-status').textContent = `✓ ${POSITIONS_LIST.length} positions loaded`;
 
   // Sites
   try {
     const sites = await fetchCSVCol(CSV_SITES, 0);
-    const sel   = document.getElementById('emp-site');
-    sel.innerHTML = '<option value="">Select site...</option>';
-    sites.forEach(s => { const o=document.createElement('option'); o.value=s; o.textContent=s; sel.appendChild(o); });
+    const siteSel = document.getElementById('emp-site');
+    siteSel.innerHTML = '';
+    buildSearchableSelect(siteSel, sites, 'Search site / cost centre...');
     document.getElementById('site-status').textContent = `✓ ${sites.length} sites loaded`;
   } catch(e) { document.getElementById('site-status').textContent = '✗ Could not load'; }
 
-  // Departments from CTR master
-  try {
-    const res  = await fetch(CSV_CTR);
-    const text = await res.text();
-    const lines= text.trim().split('\n');
-    const depts= [...new Set(lines.slice(1).map(l => {
-      const c = l.split(','); return (c[2]||'').trim().replace(/^"|"$/g,'');
-    }).filter(Boolean))].sort();
-    const sel = document.getElementById('emp-dept');
-    sel.innerHTML = '<option value="">Select department...</option>';
-    // Add indirect depts too
-    const allDepts = [...depts, 'QAQC','HSE','Planning','House Keeping','Warehouse','Admin']
-      .filter((v,i,a)=>a.indexOf(v)===i).sort();
-    allDepts.forEach(d => { const o=document.createElement('option'); o.value=d; o.textContent=d; sel.appendChild(o); });
-
-    // Also update filter dropdown
-    const fsel = document.getElementById('filter-dept');
-    fsel.innerHTML = '<option value="">All departments</option>';
-    allDepts.forEach(d => { const o=document.createElement('option'); o.value=d; o.textContent=d; fsel.appendChild(o); });
-
-    document.getElementById('dept-status').textContent = `✓ ${allDepts.length} departments loaded`;
-  } catch(e) { document.getElementById('dept-status').textContent = '✗ Could not load'; }
+  // Departments — comprehensive list
+  const DEPTS_LIST = [
+    // Construction disciplines
+    'Civil','Mechanical','Electrical','Instrumentation',
+    'Piping','Structural','Painting & Coating','Insulation',
+    'Scaffolding','Commissioning','Pre-commissioning',
+    // Support & Technical
+    'QAQC','HSE','Planning','Engineering',
+    'Surveying','NDT',
+    // Management & Admin
+    'Project Management','Construction Management',
+    'Administration','Human Resources','Document Control',
+    // Finance & Commercial
+    'Finance','Accounting','Cost Control',
+    'Commercial','Procurement','Contracts',
+    // Logistics & Operations
+    'Logistics','Warehouse','Materials','Customs',
+    'Transportation','Camp Services',
+    // IT & Communication
+    'Information Technology','Telecommunications',
+    // Other
+    'Security','Medical','Legal',
+    'Business Development','Operations',
+    'House Keeping','General Services',
+  ].sort();
+  const deptSel = document.getElementById('emp-dept');
+  deptSel.innerHTML = '';
+  buildSearchableSelect(deptSel, DEPTS_LIST, 'Search department...');
+  // Update filter dropdown
+  const fsel = document.getElementById('filter-dept');
+  fsel.innerHTML = '<option value="">All departments</option>';
+  DEPTS_LIST.forEach(d => { const o=document.createElement('option'); o.value=d; o.textContent=d; fsel.appendChild(o); });
+  document.getElementById('dept-status').textContent = `✓ ${DEPTS_LIST.length} departments loaded`;
 }
 
 // ── TAB SWITCHING ─────────────────────────────────────────────────────────────
@@ -761,12 +964,18 @@ function updateIdPreview() {
 
 // ── CONTRACT TYPE CHANGE ──────────────────────────────────────────────────────
 function onContractChange() {
-  const contract = document.getElementById('emp-contract').value;
-  const monthly  = document.getElementById('pay-monthly');
-  const daily    = document.getElementById('pay-daily');
+  const contract  = document.getElementById('emp-contract').value;
+  const monthly   = document.getElementById('pay-monthly');
+  const daily     = document.getElementById('pay-daily');
+  const endField  = document.getElementById('end-date-field');
+  const rotField  = document.getElementById('rotation-days-field');
   monthly.classList.remove('show');
   daily.classList.remove('show');
-  if (contract==='Daily Wages') {
+  // End date: only for Fixed-term
+  endField.classList.toggle('hidden', contract === 'Rotation');
+  // Rotation days: only for Rotation
+  rotField.classList.toggle('hidden', contract !== 'Rotation');
+  if (contract === 'Daily Wages') {
     daily.classList.add('show');
   } else if (contract) {
     monthly.classList.add('show');
@@ -788,7 +997,9 @@ function validate() {
   const salary   = document.getElementById('emp-salary').value;
   const daily    = document.getElementById('emp-daily-rate').value;
   const idValid  = /^IG\d+$/.test(id);
+  const rotDays  = document.getElementById('emp-rotation-days').value;
   const payOk    = contract==='Daily Wages' ? !!daily : (!contract || !!salary);
+  const rotOk    = contract!=='Rotation' || !!rotDays;
   const checks   = [
     ['a','Employee ID format valid (IG + number)',idValid],
     ['b','Full name (English) provided',!!nameEn],
@@ -799,6 +1010,7 @@ function validate() {
     ['g','Contract type selected',!!contract],
     ['h','Start date set',!!start],
     ['i','Pay rate provided',payOk],
+    ['j','Rotation days filled (Rotation contract)',rotOk],
   ];
   document.getElementById('val-rows').innerHTML = checks.map(([id,label,pass])=>`
     <div class="val-row ${pass?'pass':'fail'}" id="vr-${id}">
@@ -833,6 +1045,7 @@ async function submitEmployee() {
     'Contract Type':      contract,
     'Start Date':         document.getElementById('emp-start').value,
     'Contract End Date':  document.getElementById('emp-end').value,
+    'Rotation Days Off':  document.getElementById('emp-rotation-days').value,
     'Monthly Salary':     contract!=='Daily Wages' ? document.getElementById('emp-salary').value : '',
     'Currency':           contract!=='Daily Wages' ? document.getElementById('emp-currency').value : '',
     'Payment Method':     contract!=='Daily Wages' ? document.getElementById('emp-paymethod').value : '',
