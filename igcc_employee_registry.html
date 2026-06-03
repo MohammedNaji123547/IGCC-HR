@@ -185,8 +185,11 @@ select option{background:#fff;}
   </div>
 
   <div class="section">
-    <div class="search-bar">
-      <input type="text" class="search-input" id="search-input" placeholder="Search by name, ID, position, department..." oninput="filterTable()">
+    <div style="display:flex;gap:10px;margin-bottom:10px;">
+      <input type="text" class="search-input" id="search-input" placeholder="Search by name, ID, position, department, site..." oninput="filterTable()" style="flex:1;">
+      <button class="btn-secondary" onclick="clearFilters()" style="white-space:nowrap;font-size:12px;">✕ Clear filters</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:14px;">
       <select class="filter-select" id="filter-dept" onchange="filterTable()">
         <option value="">All departments</option>
       </select>
@@ -201,8 +204,40 @@ select option{background:#fff;}
         <option>Active</option>
         <option>Inactive</option>
       </select>
+      <select class="filter-select" id="filter-nationality" onchange="filterTable()">
+        <option value="">All nationalities</option>
+        <option>Iraqi</option>
+        <option>Expat</option>
+      </select>
+      <select class="filter-select" id="filter-site" onchange="filterTable()">
+        <option value="">All sites</option>
+      </select>
+      <select class="filter-select" id="filter-gender" onchange="filterTable()">
+        <option value="">All genders</option>
+        <option>Male</option>
+        <option>Female</option>
+      </select>
     </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <label style="font-size:11px;color:var(--label);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;">Start date from</label>
+        <input type="date" id="filter-start-from" onchange="filterTable()" style="flex:1;padding:7px 10px;font-size:12px;">
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <label style="font-size:11px;color:var(--label);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;">Start date to</label>
+        <input type="date" id="filter-start-to" onchange="filterTable()" style="flex:1;padding:7px 10px;font-size:12px;">
+      </div>
+      <select class="filter-select" id="filter-emptype" onchange="filterTable()">
+        <option value="">All employment types</option>
+        <option>Full-time</option>
+        <option>Part-time</option>
+      </select>
+    </div>
+    <div id="filter-summary" style="font-size:12px;color:var(--muted);font-family:var(--mono);margin-bottom:10px;"></div>
 
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <span id="filter-count" style="font-size:12px;color:var(--muted);font-family:var(--mono);"></span>
+    </div>
     <div class="emp-table-wrap">
       <table class="emp-table">
         <thead>
@@ -347,11 +382,11 @@ select option{background:#fff;}
       </div>
       <div class="field-row cols-3">
         <div class="field">
-          <label>Reports to (manager)</label>
+          <label>Reports to (manager) <span class="required">*</span></label>
           <select id="emp-manager">
             <option value="">Select manager...</option>
           </select>
-          <span class="field-hint">From employee registry</span>
+          <span class="field-hint">Required · pulled from employee registry</span>
         </div>
         <div class="field">
           <label>Employment type</label>
@@ -788,15 +823,44 @@ function updateStats(data) {
   document.getElementById('stat-expat').textContent  = data.filter(e=>e['Nationality']==='Expat').length;
   const sites = new Set(data.map(e=>e['Site']).filter(Boolean));
   document.getElementById('stat-sites').textContent  = sites.size;
+  populateFilterDropdowns(data);
+}
+
+function populateFilterDropdowns(data) {
+  const fill = (selId, values, allLabel) => {
+    const sel = document.getElementById(selId); if (!sel) return;
+    const prev = sel.value;
+    sel.innerHTML = `<option value="">${allLabel}</option>`;
+    [...new Set(values.filter(Boolean))].sort().forEach(v => {
+      const o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o);
+    });
+    sel.value = prev;
+  };
+  fill('filter-site',     data.map(e=>e['Site']),     'All sites');
+  fill('filter-position', data.map(e=>e['Position']), 'All positions');
+  fill('filter-dept',     data.map(e=>e['Department']),'All departments');
+  const mgrSel = document.getElementById('filter-manager');
+  if (mgrSel) {
+    const prev = mgrSel.value;
+    mgrSel.innerHTML = '<option value="">All reporting lines</option>';
+    [...new Set(data.map(e=>e['Reports To']).filter(Boolean))].sort().forEach(m => {
+      const mgr = data.find(e=>e['Employee ID']===m);
+      const o=document.createElement('option');
+      o.value=m; o.textContent=mgr?`${m} — ${mgr['Full Name (EN)']}`:m;
+      mgrSel.appendChild(o);
+    });
+    mgrSel.value = prev;
+  }
 }
 
 function populateManagerList(data) {
   const sel = document.getElementById('emp-manager');
-  sel.innerHTML = '<option value="">No manager (top level)</option>';
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Select manager...</option>';
   data.filter(e=>e['Status']==='Active').forEach(e => {
     const o=document.createElement('option');
     o.value=e['Employee ID'];
-    o.textContent=`${e['Employee ID']} — ${e['Full Name (EN)']}`;
+    o.textContent=`${e['Employee ID']} — ${e['Full Name (EN)']} (${e['Position']||'—'})`;
     sel.appendChild(o);
   });
 }
@@ -886,18 +950,52 @@ function filterTable() {
   const dept     = document.getElementById('filter-dept').value;
   const contract = document.getElementById('filter-contract').value;
   const status   = document.getElementById('filter-status').value;
+  const site     = document.getElementById('filter-site').value;
+  const position = document.getElementById('filter-position').value;
+  const manager  = document.getElementById('filter-manager').value;
+
   const filtered = employees.filter(e => {
-    const matchQ = !q ||
+    const matchQ    = !q ||
       (e['Employee ID']||'').toLowerCase().includes(q) ||
       (e['Full Name (EN)']||'').toLowerCase().includes(q) ||
       (e['Position']||'').toLowerCase().includes(q) ||
-      (e['Department']||'').toLowerCase().includes(q);
-    const matchDept = !dept || e['Department']===dept;
+      (e['Department']||'').toLowerCase().includes(q) ||
+      (e['Site']||'').toLowerCase().includes(q);
+    const matchDept = !dept     || e['Department']===dept;
     const matchCon  = !contract || e['Contract Type']===contract;
-    const matchSt   = !status || e['Status']===status;
-    return matchQ&&matchDept&&matchCon&&matchSt;
+    const matchSt   = !status   || e['Status']===status;
+    const matchSite = !site     || e['Site']===site;
+    const matchPos  = !position || e['Position']===position;
+    const matchMgr  = !manager  || e['Reports To']===manager;
+    return matchQ&&matchDept&&matchCon&&matchSt&&matchSite&&matchPos&&matchMgr;
   });
+
+  const countEl = document.getElementById('filter-count');
+  if (countEl) countEl.textContent = filtered.length === employees.length
+    ? `${employees.length} employees`
+    : `${filtered.length} of ${employees.length} employees`;
+
   renderTable(filtered);
+}
+
+function clearFilters() {
+  document.getElementById('search-input').value = '';
+  ['filter-dept','filter-contract','filter-status',
+   'filter-site','filter-position','filter-manager'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  filterTable();
+}
+
+function clearFilters() {
+  ['search-input','filter-start-from','filter-start-to'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  ['filter-dept','filter-contract','filter-status','filter-nationality',
+   'filter-site','filter-gender','filter-emptype'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  filterTable();
 }
 
 function sortTable(col) {
@@ -1005,11 +1103,13 @@ function validate() {
     ['b','Full name (English) provided',!!nameEn],
     ['c','Nationality selected',!!nat],
     ['d','Position selected',!!pos],
+    ['d2','Manager (Reports To) selected',!!document.getElementById('emp-manager')?.value],
     ['e','Department selected',!!dept],
     ['f','Site / Cost Centre selected',!!site],
     ['g','Contract type selected',!!contract],
     ['h','Start date set',!!start],
     ['i','Pay rate provided',payOk],
+    ['k','Reports to (manager) selected',!!document.getElementById('emp-manager').value],
     ['j','Rotation days filled (Rotation contract)',rotOk],
   ];
   document.getElementById('val-rows').innerHTML = checks.map(([id,label,pass])=>`
