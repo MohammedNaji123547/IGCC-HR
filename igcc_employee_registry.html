@@ -479,8 +479,8 @@ select option{background:#fff;}
 
 <script>
 // ── CONFIG ────────────────────────────────────────────────────────────────────
-const SHEETDB_URL  = 'https://sheetdb.io/api/v1/ssl6hipw5js5j';
-const EMPLOYEES_TAB= SHEETDB_URL + '?sheet=Employees';
+// Paste your Apps Script Web App URL here after deployment
+const SCRIPT_URL   = 'https://script.google.com/macros/s/AKfycbyWr4pGHzsdUvfHARGhEtTaVNPn3tf4-7YZZLgys0B2KlyR-q1_REOvRvINgUODkW32/exec';
 
 const CSV_POSITIONS= 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQuddYxbfTTwrn1dK0UZccQ6ONvSq76EpuYe0Pb8elh2sx3WeC2bx8Z-JVxuuV6pvRbnV8fikMWreul/pub?gid=0&single=true&output=csv';
 const CSV_SITES    = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSfLmsVdtOnq7zUKzaPX7Uwd-aQ6eiONkQv30vWRS0MO-3XRZzj5liNU08LyRoII522GqAqovxo3Z5N/pub?output=csv';
@@ -563,15 +563,19 @@ async function loadEmployees() {
   document.getElementById('table-loading').classList.remove('hidden');
   document.getElementById('table-empty').classList.add('hidden');
   document.getElementById('emp-table-body').innerHTML = '';
+  if (!SCRIPT_URL || SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
+    document.getElementById('table-loading').textContent = '⚠ Apps Script URL not configured yet';
+    return;
+  }
   try {
-    const res  = await fetch(EMPLOYEES_TAB);
-    const data = await res.json();
-    employees  = Array.isArray(data) ? data : [];
+    const res  = await fetch(`${SCRIPT_URL}?action=read`);
+    const json = await res.json();
+    employees  = json.data || [];
     renderTable(employees);
     updateStats(employees);
     populateManagerList(employees);
   } catch(e) {
-    document.getElementById('table-loading').textContent = '✗ Could not load employees — check SheetDB connection';
+    document.getElementById('table-loading').textContent = '✗ Could not load employees — check Apps Script deployment';
   }
 }
 
@@ -719,14 +723,33 @@ function exportCSV() {
 }
 
 // ── AUTO-GENERATE ID ──────────────────────────────────────────────────────────
-function autoGenerateId() {
-  const existing = employees.map(e=>{
-    const m = (e['Employee ID']||'').match(/^IG(\d+)$/);
-    return m ? parseInt(m[1]) : 0;
-  });
-  const maxSeq = Math.max(0, ...existing);
-  const next   = String(maxSeq+1).padStart(4,'0');
-  document.getElementById('emp-id').value = `IG${next}`;
+async function autoGenerateId() {
+  const btn = document.querySelector('[onclick="autoGenerateId()"]');
+  if (btn) { btn.textContent = '...'; btn.disabled = true; }
+  try {
+    if (SCRIPT_URL && SCRIPT_URL !== 'YOUR_APPS_SCRIPT_URL_HERE') {
+      const res  = await fetch(`${SCRIPT_URL}?action=check_id`);
+      const json = await res.json();
+      document.getElementById('emp-id').value = json.nextId || 'IG0001';
+    } else {
+      // Fallback: generate from loaded employees
+      const existing = employees.map(e=>{
+        const m=(e['Employee ID']||'').match(/^IG(\d+)$/);
+        return m?parseInt(m[1]):0;
+      });
+      const next = String(Math.max(0,...existing)+1).padStart(4,'0');
+      document.getElementById('emp-id').value = `IG${next}`;
+    }
+  } catch(e) {
+    const existing = employees.map(e=>{
+      const m=(e['Employee ID']||'').match(/^IG(\d+)$/);
+      return m?parseInt(m[1]):0;
+    });
+    const next = String(Math.max(0,...existing)+1).padStart(4,'0');
+    document.getElementById('emp-id').value = `IG${next}`;
+  } finally {
+    if (btn) { btn.textContent = 'Auto-generate'; btn.disabled = false; }
+  }
   updateIdPreview();
   validate();
 }
@@ -824,14 +847,38 @@ async function submitEmployee() {
   };
 
   try {
-    await fetch(EMPLOYEES_TAB, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({data:[record]})
+    if (!SCRIPT_URL || SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
+      console.log('Employee record (not connected):', JSON.stringify(record, null, 2));
+      employees.push(record);
+      showSuccess(record);
+      return;
+    }
+    // Use hidden form POST — bypasses CORS restrictions
+    await new Promise((resolve) => {
+      const iframeName = 'hr-submit-frame';
+      let iframe = document.getElementById(iframeName);
+      if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.name = iframeName; iframe.id = iframeName;
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+      }
+      const form = document.createElement('form');
+      form.method = 'POST'; form.action = SCRIPT_URL;
+      form.target = iframeName; form.style.display = 'none';
+      const input = document.createElement('input');
+      input.type = 'hidden'; input.name = 'payload';
+      input.value = JSON.stringify(record);
+      form.appendChild(input);
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
+      setTimeout(resolve, 3000);
     });
     employees.push(record);
     showSuccess(record);
   } catch(e) {
-    alert('Could not save — check SheetDB connection');
+    alert('Could not save — check Apps Script deployment');
     document.getElementById('btn-submit').disabled = false;
     document.getElementById('btn-submit').textContent = 'Register employee';
   }
