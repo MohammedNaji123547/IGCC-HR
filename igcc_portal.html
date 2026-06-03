@@ -3,718 +3,524 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IGCC — Cost Control Portal</title>
-<script src="https://accounts.google.com/gsi/client" async></script>
+<title>IGCC — Employee Portal</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
   --bg:#f0f4f8;--surface:#fff;--surface2:#f8fafc;--border:#dde3ed;
-  --accent:#0284c7;--accent-dim:rgba(2,132,199,0.08);
+  --accent:#0f172a;--accent2:#0284c7;--accent-dim:rgba(2,132,199,.08);
   --success:#16a34a;--danger:#dc2626;--warning:#d97706;
   --text:#0f172a;--muted:#64748b;--label:#475569;
   --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
-  --shadow:0 1px 3px rgba(0,0,0,.08);--shadow-md:0 4px 16px rgba(0,0,0,.1);
+  --shadow:0 1px 3px rgba(0,0,0,.08);--shadow-md:0 4px 12px rgba(0,0,0,.1);
+  --shadow-lg:0 8px 24px rgba(0,0,0,.12);
 }
 body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;min-height:100vh;}
 
 /* ── LOGIN SCREEN ─────────────────────────────────────────────────────────── */
-.login-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);}
-.login-card{background:#fff;border-radius:16px;padding:48px 44px;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;}
-.login-logo{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:32px;}
-.login-badge{background:var(--accent);color:#fff;font-family:var(--mono);font-size:18px;font-weight:700;padding:10px 18px;border-radius:10px;letter-spacing:.06em;}
-.login-company{font-size:13px;color:var(--muted);font-weight:500;text-align:left;}
+.login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
+.login-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:48px 40px;max-width:420px;width:100%;box-shadow:var(--shadow-lg);text-align:center;}
+.login-logo{width:56px;height:56px;background:var(--accent);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-family:var(--mono);font-size:18px;font-weight:700;color:#fff;letter-spacing:.05em;}
 .login-title{font-size:22px;font-weight:700;color:var(--text);margin-bottom:6px;}
 .login-sub{font-size:13px;color:var(--muted);margin-bottom:32px;line-height:1.6;}
-.login-divider{border:none;border-top:1px solid var(--border);margin:24px 0;}
+.login-divider{display:flex;align-items:center;gap:12px;margin:24px 0;color:var(--muted);font-size:12px;}
+.login-divider::before,.login-divider::after{content:'';flex:1;height:1px;background:var(--border);}
 .login-note{font-size:11px;color:var(--muted);margin-top:20px;line-height:1.6;}
-.login-error{background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;font-size:12px;color:var(--danger);margin-top:16px;display:none;}
+.login-error{background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.2);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--danger);margin-top:16px;display:none;}
 .login-error.show{display:block;}
 
-/* ── PORTAL HEADER ────────────────────────────────────────────────────────── */
-.portal{display:none;min-height:100vh;}
-.portal-header{background:#0f172a;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;}
-.portal-header-left{display:flex;align-items:center;gap:14px;}
-.portal-badge{background:var(--accent);color:#fff;font-family:var(--mono);font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;letter-spacing:.05em;}
-.portal-title{font-size:13px;font-weight:500;color:#94a3b8;}
-.portal-user{display:flex;align-items:center;gap:10px;}
-.user-avatar{width:32px;height:32px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;font-family:var(--mono);}
-.user-name{font-size:12px;color:#94a3b8;}
-.user-role{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:10px;font-weight:500;}
-.role-admin{background:rgba(220,38,38,.2);color:#fca5a5;}
-.role-hr{background:rgba(124,58,237,.2);color:#c4b5fd;}
-.role-site{background:rgba(22,163,74,.2);color:#86efac;}
-.role-dept{background:rgba(217,119,6,.2);color:#fcd34d;}
-.role-emp{background:rgba(100,116,139,.2);color:#cbd5e1;}
-.role-ivms{background:rgba(2,132,199,.2);color:#7dd3fc;}
-.btn-logout{background:none;border:1px solid #334155;border-radius:6px;color:#94a3b8;cursor:pointer;font-size:11px;padding:5px 12px;transition:all .15s;}
-.btn-logout:hover{border-color:#64748b;color:#e2e8f0;}
-
-/* ── PORTAL BODY ──────────────────────────────────────────────────────────── */
-.portal-body{display:flex;min-height:calc(100vh - 56px);}
+/* ── PORTAL SHELL ─────────────────────────────────────────────────────────── */
+.portal{display:none;}
+.portal.active{display:flex;min-height:100vh;}
 
 /* SIDEBAR */
-.sidebar{width:220px;background:#fff;border-right:1px solid var(--border);padding:20px 0;flex-shrink:0;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto;}
-.sidebar-section{margin-bottom:8px;}
-.sidebar-label{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;padding:8px 18px 4px;}
-.sidebar-item{display:flex;align-items:center;gap:10px;padding:9px 18px;cursor:pointer;transition:all .15s;border-left:3px solid transparent;font-size:13px;color:var(--label);}
-.sidebar-item:hover{background:var(--accent-dim);color:var(--accent);}
-.sidebar-item.active{background:var(--accent-dim);color:var(--accent);border-left-color:var(--accent);font-weight:500;}
-.sidebar-icon{font-size:16px;flex-shrink:0;}
-.sidebar-divider{border:none;border-top:1px solid var(--border);margin:8px 0;}
+.sidebar{width:240px;background:var(--accent);min-height:100vh;position:fixed;left:0;top:0;bottom:0;display:flex;flex-direction:column;z-index:100;transition:transform .3s;}
+.sidebar-brand{padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,.1);}
+.sidebar-logo{font-family:var(--mono);font-size:13px;font-weight:700;color:#fff;letter-spacing:.08em;margin-bottom:3px;}
+.sidebar-tagline{font-size:11px;color:rgba(255,255,255,.5);}
+.sidebar-user{padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:10px;}
+.sidebar-avatar{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;font-family:var(--mono);flex-shrink:0;overflow:hidden;}
+.sidebar-avatar img{width:100%;height:100%;object-fit:cover;}
+.sidebar-username{font-size:12px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sidebar-role{font-size:10px;font-family:var(--mono);color:rgba(255,255,255,.5);}
+.sidebar-nav{flex:1;padding:12px 0;overflow-y:auto;}
+.nav-section-title{font-size:10px;font-weight:600;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.1em;padding:10px 20px 6px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;transition:background .15s;border-radius:0;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;text-decoration:none;user-select:none;}
+.nav-item:hover{background:rgba(255,255,255,.08);color:#fff;}
+.nav-item.active{background:rgba(255,255,255,.15);color:#fff;}
+.nav-item.locked{opacity:.35;cursor:not-allowed;pointer-events:none;}
+.nav-icon{width:18px;height:18px;flex-shrink:0;opacity:.8;}
+.nav-badge{margin-left:auto;background:rgba(255,255,255,.2);color:#fff;font-size:10px;font-family:var(--mono);padding:1px 6px;border-radius:10px;}
+.sidebar-footer{padding:14px 20px;border-top:1px solid rgba(255,255,255,.1);}
+.btn-signout{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:rgba(255,255,255,.7);cursor:pointer;font-family:var(--sans);font-size:12px;padding:8px 14px;width:100%;transition:all .15s;text-align:left;}
+.btn-signout:hover{background:rgba(255,255,255,.15);color:#fff;}
 
 /* MAIN CONTENT */
-.main{flex:1;padding:28px;overflow-y:auto;}
-.page-title{font-size:22px;font-weight:700;color:var(--text);margin-bottom:4px;}
-.page-sub{font-size:13px;color:var(--muted);margin-bottom:28px;}
+.main{margin-left:240px;min-height:100vh;display:flex;flex-direction:column;}
+.topbar{background:#fff;border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow);position:sticky;top:0;z-index:50;}
+.topbar-title{font-size:16px;font-weight:700;color:var(--text);}
+.topbar-sub{font-size:12px;color:var(--muted);margin-top:1px;}
+.topbar-right{display:flex;align-items:center;gap:12px;}
+.content{flex:1;padding:28px;}
 
-/* MODULE GRID */
-.module-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;margin-bottom:32px;}
-.module-card{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:22px;cursor:pointer;transition:all .2s;box-shadow:var(--shadow);position:relative;overflow:hidden;}
-.module-card:hover{border-color:var(--accent);box-shadow:var(--shadow-md);transform:translateY(-2px);}
-.module-card.locked{opacity:.5;cursor:not-allowed;filter:grayscale(.3);}
-.module-card.locked:hover{transform:none;border-color:var(--border);box-shadow:var(--shadow);}
-.module-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:14px;}
-.module-name{font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px;}
+/* DASHBOARD GRID */
+.dashboard-greeting{font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px;}
+.dashboard-date{font-size:12px;color:var(--muted);font-family:var(--mono);margin-bottom:24px;}
+.modules-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;margin-bottom:28px;}
+.module-card{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:22px;cursor:pointer;transition:all .2s;box-shadow:var(--shadow);text-decoration:none;display:block;position:relative;overflow:hidden;}
+.module-card:hover{border-color:var(--accent2);box-shadow:var(--shadow-md);transform:translateY(-2px);}
+.module-card.locked{opacity:.5;cursor:not-allowed;pointer-events:none;}
+.module-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--card-color,var(--accent2));}
+.module-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;font-size:20px;}
+.module-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;}
 .module-desc{font-size:12px;color:var(--muted);line-height:1.5;}
-.module-badge{position:absolute;top:14px;right:14px;font-size:10px;font-family:var(--mono);padding:2px 7px;border-radius:10px;}
-.badge-live{background:rgba(22,163,74,.1);color:var(--success);border:1px solid rgba(22,163,74,.2);}
-.badge-ro{background:rgba(217,119,6,.1);color:var(--warning);border:1px solid rgba(217,119,6,.2);}
-.badge-locked{background:rgba(100,116,139,.1);color:var(--muted);border:1px solid var(--border);}
+.module-access{font-size:10px;font-family:var(--mono);margin-top:10px;padding:2px 8px;border-radius:10px;display:inline-block;}
+.access-full{background:rgba(22,163,74,.1);color:var(--success);}
+.access-view{background:rgba(217,119,6,.1);color:var(--warning);}
+.access-own{background:rgba(2,132,199,.1);color:var(--accent2);}
 
-/* STATS ROW */
-.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px;}
-.stat-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px 18px;box-shadow:var(--shadow);}
-.stat-num{font-family:var(--mono);font-size:28px;font-weight:600;line-height:1;margin-bottom:4px;color:var(--accent);}
+/* QUICK STATS */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;}
+.stat-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;box-shadow:var(--shadow);}
+.stat-num{font-family:var(--mono);font-size:28px;font-weight:600;line-height:1;margin-bottom:4px;color:var(--accent2);}
 .stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
 
-/* FRAME */
-.module-frame{display:none;width:100%;height:calc(100vh - 56px - 56px);border:none;border-radius:12px;box-shadow:var(--shadow-md);}
+/* MODULE FRAME */
+.module-frame{display:none;background:#fff;border-radius:12px;overflow:hidden;box-shadow:var(--shadow);height:calc(100vh - 120px);}
 .module-frame.active{display:block;}
-.frame-header{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
-.btn-back{background:#fff;border:1.5px solid var(--border);border-radius:8px;color:var(--label);cursor:pointer;font-size:13px;font-weight:500;padding:8px 16px;transition:all .15s;}
-.btn-back:hover{border-color:var(--accent);color:var(--accent);}
+.module-frame iframe{width:100%;height:100%;border:none;}
 
-/* ADMIN PANEL */
-.admin-table-wrap{border:1.5px solid var(--border);border-radius:10px;overflow:hidden;margin-top:16px;}
-.admin-table{width:100%;border-collapse:collapse;}
-.admin-table thead tr{background:var(--surface2);}
-.admin-table th{text-align:left;font-size:11px;font-weight:600;color:var(--label);letter-spacing:.06em;text-transform:uppercase;padding:11px 14px;border-bottom:1.5px solid var(--border);}
-.admin-table td{padding:10px 14px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
-.admin-table tbody tr:last-child td{border-bottom:none;}
-.admin-table tbody tr:hover{background:var(--surface2);}
-.field-row{display:grid;gap:14px;margin-bottom:14px;}
-.field-row.cols-2{grid-template-columns:1fr 1fr;}
-.field-row.cols-3{grid-template-columns:1fr 1fr 1fr;}
-.field{display:flex;flex-direction:column;gap:5px;}
-label.lbl{font-size:11px;font-weight:600;color:var(--label);letter-spacing:.06em;text-transform:uppercase;}
-input.inp,select.sel{background:#fff;border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--sans);font-size:14px;padding:9px 12px;outline:none;width:100%;transition:border-color .15s;}
-input.inp:focus,select.sel:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(2,132,199,.12);}
-.btn-primary{background:var(--accent);border:none;border-radius:8px;color:#fff;cursor:pointer;font-family:var(--sans);font-size:14px;font-weight:600;padding:10px 22px;transition:all .15s;}
-.btn-primary:hover{background:#0369a1;}
-.btn-sm{font-size:11px;padding:4px 10px;border-radius:5px;cursor:pointer;border:1.5px solid var(--border);background:#fff;color:var(--label);transition:all .15s;}
-.btn-sm:hover{border-color:var(--danger);color:var(--danger);}
-.badge-role{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:10px;font-weight:500;}
+/* ROLE BADGE */
+.role-badge{font-size:10px;font-family:var(--mono);padding:3px 10px;border-radius:20px;font-weight:600;}
+.role-admin{background:#0f172a;color:#fff;}
+.role-hr{background:rgba(124,58,237,.1);color:#6d28d9;}
+.role-supervisor{background:rgba(2,132,199,.1);color:var(--accent2);}
+.role-employee{background:rgba(22,163,74,.1);color:var(--success);}
 
-/* WELCOME BANNER */
-.welcome-banner{background:linear-gradient(135deg,#0f172a,#1e3a5f);border-radius:14px;padding:28px 32px;margin-bottom:24px;color:#fff;display:flex;align-items:center;justify-content:space-between;}
-.welcome-text h2{font-size:20px;font-weight:700;margin-bottom:4px;}
-.welcome-text p{font-size:13px;color:#94a3b8;}
-.welcome-time{font-family:var(--mono);font-size:28px;font-weight:300;color:#38bdf8;}
+/* ACCESS DENIED */
+.access-denied{text-align:center;padding:60px 20px;}
+.access-denied-icon{font-size:48px;margin-bottom:16px;}
+.access-denied-title{font-size:18px;font-weight:700;margin-bottom:8px;}
+.access-denied-sub{font-size:13px;color:var(--muted);}
 
 .hidden{display:none!important;}
-@media(max-width:768px){.sidebar{display:none;}.stats-row{grid-template-columns:1fr 1fr;}}
+@media(max-width:768px){.sidebar{transform:translateX(-100%);}.main{margin-left:0;}.stats-row{grid-template-columns:1fr 1fr;}}
 </style>
 </head>
 <body>
 
-<!-- ══════════════════════════════════════════════════════════════════ -->
-<!-- LOGIN SCREEN -->
-<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- ══════════════════════ LOGIN SCREEN ══════════════════════ -->
 <div class="login-screen" id="login-screen">
   <div class="login-card">
-    <div class="login-logo">
-      <div>
-        <span class="login-badge">IGCC</span>
-      </div>
-      <div class="login-company">
-        <div style="font-size:15px;font-weight:700;color:var(--text);">Cost Control Portal</div>
-        <div>Iraq Construction & General Contracting</div>
-      </div>
-    </div>
-    <div class="login-title">Welcome back</div>
-    <div class="login-sub">Sign in with your IGCC Google account to access your workspace.</div>
+    <div class="login-logo">IG</div>
+    <div class="login-title">IGCC Employee Portal</div>
+    <div class="login-sub">Sign in with your company Google account to access the portal. Contact HR if you don't have access.</div>
 
     <!-- Google Sign-In button -->
-    <div id="g_id_onload"
-      data-client_id="YOUR_GOOGLE_CLIENT_ID"
-      data-callback="onGoogleLogin"
-      data-auto_prompt="false">
-    </div>
-    <div class="g_id_signin"
-      data-type="standard"
-      data-size="large"
-      data-theme="outline"
-      data-text="sign_in_with"
-      data-shape="rectangular"
-      data-width="320">
+    <div id="google-signin-btn" style="display:flex;justify-content:center;"></div>
+
+    <div class="login-divider">or</div>
+
+    <!-- Demo access for testing -->
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button onclick="demoLogin('admin')" style="background:#0f172a;border:none;border-radius:8px;color:#fff;cursor:pointer;font-family:var(--sans);font-size:13px;font-weight:500;padding:11px;width:100%;transition:opacity .15s;">Sign in as Admin (demo)</button>
+      <button onclick="demoLogin('hr')" style="background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.2);border-radius:8px;color:#6d28d9;cursor:pointer;font-family:var(--sans);font-size:13px;font-weight:500;padding:11px;width:100%;transition:all .15s;">Sign in as HR Manager (demo)</button>
+      <button onclick="demoLogin('supervisor')" style="background:var(--accent-dim);border:1px solid rgba(2,132,199,.2);border-radius:8px;color:var(--accent2);cursor:pointer;font-family:var(--sans);font-size:13px;font-weight:500;padding:11px;width:100%;transition:all .15s;">Sign in as Dept Supervisor (demo)</button>
+      <button onclick="demoLogin('employee')" style="background:rgba(22,163,74,.1);border:1px solid rgba(22,163,74,.2);border-radius:8px;color:var(--success);cursor:pointer;font-family:var(--sans);font-size:13px;font-weight:500;padding:11px;width:100%;transition:all .15s;">Sign in as Employee (demo)</button>
     </div>
 
-    <div class="login-error" id="login-error"></div>
-    <div class="login-note">
-      Access is restricted to registered IGCC employees.<br>
-      Contact HR if you cannot sign in.
-    </div>
+    <div class="login-error" id="login-error">Access denied — your email is not registered in the IGCC employee directory. Contact HR.</div>
+    <div class="login-note">Your Google account email must match your registered company email. Data is stored securely in IGCC Google Workspace.</div>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════════════════ -->
-<!-- PORTAL -->
-<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- ══════════════════════ PORTAL ══════════════════════ -->
 <div class="portal" id="portal">
 
-  <!-- HEADER -->
-  <div class="portal-header">
-    <div class="portal-header-left">
-      <span class="portal-badge">IGCC</span>
-      <span class="portal-title">Cost Control Portal</span>
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-logo">IGCC</div>
+      <div class="sidebar-tagline">Employee Portal</div>
     </div>
-    <div class="portal-user">
-      <div class="user-avatar" id="user-avatar">—</div>
+    <div class="sidebar-user">
+      <div class="sidebar-avatar" id="sidebar-avatar">?</div>
       <div>
-        <div class="user-name" id="user-name">—</div>
-        <span class="user-role" id="user-role-badge">—</span>
+        <div class="sidebar-username" id="sidebar-username">Loading...</div>
+        <div class="sidebar-role" id="sidebar-role">—</div>
       </div>
-      <button class="btn-logout" onclick="logout()">Sign out</button>
+    </div>
+    <nav class="sidebar-nav" id="sidebar-nav"></nav>
+    <div class="sidebar-footer">
+      <button class="btn-signout" onclick="signOut()">Sign out</button>
     </div>
   </div>
 
-  <div class="portal-body">
-
-    <!-- SIDEBAR -->
-    <div class="sidebar" id="sidebar">
-      <div class="sidebar-section">
-        <div class="sidebar-label">Workspace</div>
-        <div class="sidebar-item active" id="nav-home" onclick="showHome()">
-          <span class="sidebar-icon">⊞</span> Dashboard
-        </div>
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="topbar-title">Dashboard</div>
+        <div class="topbar-sub" id="topbar-sub"></div>
       </div>
-      <div class="sidebar-section" id="nav-operations-section">
-        <div class="sidebar-label">Operations</div>
-        <div class="sidebar-item hidden" id="nav-manpower" onclick="openModule('manpower')">
-          <span class="sidebar-icon">👷</span> Manpower
-        </div>
-        <div class="sidebar-item hidden" id="nav-logistics" onclick="openModule('logistics')">
-          <span class="sidebar-icon">🚛</span> Logistics
-        </div>
-        <div class="sidebar-item hidden" id="nav-ivms" onclick="openModule('ivms')">
-          <span class="sidebar-icon">📡</span> IVMS Dashboard
-        </div>
-      </div>
-      <div class="sidebar-section" id="nav-hr-section">
-        <div class="sidebar-label">Human Resources</div>
-        <div class="sidebar-item hidden" id="nav-registry" onclick="openModule('registry')">
-          <span class="sidebar-icon">👤</span> Employee Registry
-        </div>
-        <div class="sidebar-item hidden" id="nav-orgchart" onclick="openModule('orgchart')">
-          <span class="sidebar-icon">🏗</span> Org Chart
-        </div>
-        <div class="sidebar-item hidden" id="nav-leave" onclick="openModule('leave')">
-          <span class="sidebar-icon">📅</span> Leave Management
-        </div>
-      </div>
-      <div class="sidebar-section" id="nav-admin-section" style="display:none;">
-        <hr class="sidebar-divider">
-        <div class="sidebar-label">Administration</div>
-        <div class="sidebar-item" id="nav-users" onclick="showAdminPanel()">
-          <span class="sidebar-icon">⚙</span> User Management
-        </div>
+      <div class="topbar-right">
+        <span class="role-badge" id="topbar-role-badge"></span>
       </div>
     </div>
-
-    <!-- MAIN -->
-    <div class="main" id="main-content">
-
-      <!-- HOME VIEW -->
-      <div id="view-home">
-        <div class="welcome-banner">
-          <div class="welcome-text">
-            <h2 id="welcome-msg">Good morning</h2>
-            <p id="welcome-sub">Here's your workspace overview for today.</p>
-          </div>
-          <div class="welcome-time" id="live-time">--:--</div>
-        </div>
-
-        <div class="stats-row" id="stats-row" style="display:none;">
-          <div class="stat-card"><div class="stat-num" id="stat-emp">—</div><div class="stat-label">Employees</div></div>
-          <div class="stat-card"><div class="stat-num" id="stat-site" style="color:var(--success);">—</div><div class="stat-label">Active sites</div></div>
-          <div class="stat-card"><div class="stat-num" id="stat-cases" style="color:var(--warning);">—</div><div class="stat-label">Open cases</div></div>
-          <div class="stat-card"><div class="stat-num" id="stat-access" style="color:var(--muted);">—</div><div class="stat-label">My role</div></div>
-        </div>
-
-        <div style="font-size:13px;font-weight:600;color:var(--label);text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px;">Your modules</div>
-        <div class="module-grid" id="module-grid"></div>
-      </div>
-
-      <!-- MODULE FRAME VIEW -->
-      <div id="view-module" class="hidden">
-        <div class="frame-header">
-          <button class="btn-back" onclick="showHome()">← Back to portal</button>
-          <div style="font-size:16px;font-weight:600;color:var(--text);" id="frame-title"></div>
-          <span id="frame-badge" class="module-badge" style="position:static;"></span>
-        </div>
-        <iframe id="module-iframe" class="module-frame active" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
-      </div>
-
-      <!-- ADMIN VIEW -->
-      <div id="view-admin" class="hidden">
-        <div class="page-title">User Management</div>
-        <div class="page-sub">Add, edit and control portal access for IGCC employees.</div>
-
-        <!-- Add user form -->
-        <div style="background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:22px;margin-bottom:20px;box-shadow:var(--shadow);">
-          <div style="font-size:13px;font-weight:600;margin-bottom:16px;color:var(--text);">Add new portal user</div>
-          <div class="field-row cols-3">
-            <div class="field"><label class="lbl">Employee ID</label><input class="inp" id="new-empid" placeholder="IG0001"></div>
-            <div class="field"><label class="lbl">Full name</label><input class="inp" id="new-name" placeholder="Full name"></div>
-            <div class="field"><label class="lbl">Email (Google) <span style="color:var(--danger)">*</span></label><input class="inp" id="new-email" placeholder="name@igcc.com" type="email"></div>
-          </div>
-          <div class="field-row cols-3">
-            <div class="field"><label class="lbl">Role <span style="color:var(--danger)">*</span></label>
-              <select class="sel" id="new-role" onchange="onNewRoleChange()">
-                <option value="">Select role...</option>
-                <option>Admin</option>
-                <option>HR Manager</option>
-                <option>Site Manager</option>
-                <option>Department Supervisor</option>
-                <option>Employee</option>
-              </select>
-            </div>
-            <div class="field"><label class="lbl">Site</label><input class="inp" id="new-site" placeholder="Site / cost centre"></div>
-            <div class="field"><label class="lbl">Department</label><input class="inp" id="new-dept" placeholder="Department"></div>
-          </div>
-          <button class="btn-primary" onclick="addPortalUser()">Add user</button>
-        </div>
-
-        <!-- Users table -->
-        <div class="admin-table-wrap">
-          <table class="admin-table">
-            <thead><tr>
-              <th>Employee ID</th><th>Name</th><th>Email</th>
-              <th>Role</th><th>Site</th><th>Status</th><th>Last login</th><th></th>
-            </tr></thead>
-            <tbody id="users-table-body"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+    <div class="content" id="main-content"></div>
   </div>
 </div>
 
 <script>
 // ── CONFIG ────────────────────────────────────────────────────────────────────
-const AUTH_SCRIPT_URL = 'YOUR_AUTH_SCRIPT_URL_HERE'; // paste after deploying auth script
+const GOOGLE_CLIENT_ID = '392743906594-f4huq0l2hf3b71tpn5hh4eba5ftt9ti0.apps.googleusercontent.com'; // Replace with your Google OAuth client ID
+const HR_SCRIPT_URL    = 'https://script.google.com/macros/s/AKfycbyWr4pGHzsdUvfHARGhEtTaVNPn3tf4-7YZZLgys0B2KlyR-q1_REOvRvINgUODkW32/exec';
+
+// Module URLs — update with your GitHub Pages URLs
+const MODULE_URLS = {
+  manpower:  'https://mohammednaji123547.github.io/igcc-forms/index.html',
+  logistics: 'https://mohammednaji123547.github.io/igcc-forms/igcc_logistics_form.html',
+  ivms:      'https://mohammednaji123547.github.io/igcc-forms/igcc_ivms_dashboard.html',
+  registry:  'https://mohammednaji123547.github.io/igcc-forms/igcc_employee_registry.html',
+  orgchart:  'https://mohammednaji123547.github.io/igcc-forms/igcc_org_chart.html',
+  leave:     'https://mohammednaji123547.github.io/igcc-forms/igcc_leave.html',
+};
+
+// ── ROLE DEFINITIONS ──────────────────────────────────────────────────────────
+// Access levels: 'full' | 'view' | 'own' | null (no access)
+const ROLES = {
+  admin: {
+    label: 'Administrator',
+    badgeClass: 'role-admin',
+    access: {
+      manpower: 'full', logistics: 'full', ivms: 'full',
+      registry: 'full', orgchart:  'full', leave: 'full', profile: 'full'
+    }
+  },
+  hr: {
+    label: 'HR Manager',
+    badgeClass: 'role-hr',
+    access: {
+      manpower: 'full', logistics: 'view', ivms: 'view',
+      registry: 'full', orgchart:  'full', leave: 'full', profile: 'full'
+    }
+  },
+  supervisor: {
+    label: 'Dept Supervisor',
+    badgeClass: 'role-supervisor',
+    access: {
+      manpower: 'own', logistics: 'own', ivms: null,
+      registry: 'view', orgchart: 'own', leave: 'own', profile: 'full'
+    }
+  },
+  employee: {
+    label: 'Employee',
+    badgeClass: 'role-employee',
+    access: {
+      manpower: null, logistics: null, ivms: null,
+      registry: null, orgchart: 'view', leave: 'own', profile: 'full'
+    }
+  }
+};
 
 // Module definitions
-const ALL_MODULES = {
-  manpower: {
-    name:  'Daily Manpower',
-    desc:  'Submit daily manpower reports by CTR and department',
-    icon:  '👷',
-    color: '#dbeafe',
-    url:   'https://mohammednaji123547.github.io/igcc-forms/igcc_hr_manpower_form.html',
-    key:   'manpower'
-  },
-  logistics: {
-    name:  'Logistics Request',
-    desc:  'Equipment requests, assignment and IVMS verification',
-    icon:  '🚛',
-    color: '#dcfce7',
-    url:   'https://mohammednaji123547.github.io/igcc-forms/igcc_logistics_form.html',
-    key:   'logistics'
-  },
-  ivms: {
-    name:  'IVMS Dashboard',
-    desc:  'Live equipment attendance and GPS verification cases',
-    icon:  '📡',
-    color: '#f0fdf4',
-    url:   'https://mohammednaji123547.github.io/igcc-forms/igcc_ivms_dashboard.html',
-    key:   'ivms'
-  },
-  registry: {
-    name:  'Employee Registry',
-    desc:  'Register and manage IGCC employee records',
-    icon:  '👤',
-    color: '#faf5ff',
-    url:   'https://mohammednaji123547.github.io/igcc-forms/igcc_employee_registry.html',
-    key:   'registry'
-  },
-  orgchart: {
-    name:  'Org Chart',
-    desc:  'Visual reporting hierarchy across all sites',
-    icon:  '🏗',
-    color: '#fff7ed',
-    url:   'https://mohammednaji123547.github.io/igcc-forms/igcc_org_chart.html',
-    key:   'orgchart'
-  },
-  leave: {
-    name:  'Leave Management',
-    desc:  'Submit and approve leave requests, track balances',
-    icon:  '📅',
-    color: '#fef9c3',
-    url:   '#',
-    key:   'leave',
-    coming: true
-  }
-};
+const MODULES = [
+  { id:'manpower',  title:'Daily Manpower',       desc:'Submit daily manpower reports per CTR',      icon:'👷', color:'#0284c7' },
+  { id:'logistics', title:'Logistics Requests',   desc:'Request and track equipment assignments',    icon:'🚧', color:'#16a34a' },
+  { id:'ivms',      title:'IVMS Dashboard',       desc:'Monitor equipment GPS and attendance',       icon:'📡', color:'#7c3aed' },
+  { id:'registry',  title:'Employee Registry',    desc:'Manage employee records and contracts',      icon:'👥', color:'#0f172a' },
+  { id:'orgchart',  title:'Organisation Chart',   desc:'View company hierarchy and reporting lines', icon:'🏢', color:'#d97706' },
+  { id:'leave',     title:'Leave Management',     desc:'Request and approve leave applications',     icon:'📅', color:'#dc2626' },
+  { id:'profile',   title:'My Profile',           desc:'View and update your personal information',  icon:'👤', color:'#64748b' },
+];
 
-const ROLE_COLORS = {
-  'Admin':                 'role-admin',
-  'HR Manager':            'role-hr',
-  'Site Manager':          'role-site',
-  'Department Supervisor': 'role-dept',
-  'Employee':              'role-emp',
-};
+// Nav sections
+const NAV_SECTIONS = [
+  { title:'Operations', ids:['manpower','logistics','ivms'] },
+  { title:'People',     ids:['registry','orgchart','leave'] },
+  { title:'My Account', ids:['profile'] },
+];
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
-let currentUser  = null;
-let userPerms    = null;
+let currentUser = null;
+let currentRole = null;
+let activeModule= 'dashboard';
 
-// ── GOOGLE LOGIN ──────────────────────────────────────────────────────────────
-function onGoogleLogin(response) {
-  // Decode JWT to get email
-  const payload = JSON.parse(atob(response.credential.split('.')[1]));
+// ── GOOGLE SIGN-IN ────────────────────────────────────────────────────────────
+window.onload = function() {
+  if (GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID') {
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleGoogleLogin,
+      auto_select: false,
+    });
+    google.accounts.id.renderButton(
+      document.getElementById('google-signin-btn'),
+      { theme:'outline', size:'large', width:340, text:'signin_with', shape:'rectangular' }
+    );
+  }
+};
+
+async function handleGoogleLogin(response) {
+  const payload = parseJwt(response.credential);
   const email   = payload.email;
-  const name    = payload.name;
-  authenticateWithBackend(email, name);
-}
 
-async function authenticateWithBackend(email, name) {
+  // Check if email is in employee registry
   try {
-    const res  = await fetch(`${AUTH_SCRIPT_URL}?action=auth&email=${encodeURIComponent(email)}`);
+    const res  = await fetch(`${HR_SCRIPT_URL}?action=read`);
     const json = await res.json();
+    const emp  = (json.data||[]).find(e =>
+      (e['Email']||'').toLowerCase() === email.toLowerCase()
+    );
 
-    if (json.status === 'ok') {
-      currentUser = json.user;
-      userPerms   = json.permissions;
-      // Save session
-      sessionStorage.setItem('igcc_user', JSON.stringify({user:currentUser, perms:userPerms}));
-      launchPortal();
-    } else if (json.status === 'not_found') {
-      showLoginError('Your email is not registered in the IGCC portal. Contact HR to get access.');
-    } else if (json.status === 'inactive') {
-      showLoginError('Your account has been deactivated. Contact HR.');
-    } else {
-      showLoginError('Authentication failed. Please try again.');
+    if (!emp) {
+      document.getElementById('login-error').classList.add('show');
+      return;
     }
+
+    // Determine role from employee record
+    const roleKey = determineRole(emp);
+    loginUser({
+      name:    payload.name,
+      email:   email,
+      picture: payload.picture,
+      empId:   emp['Employee ID'],
+      dept:    emp['Department'],
+      site:    emp['Site'],
+      position:emp['Position'],
+    }, roleKey);
   } catch(e) {
-    // Dev mode — if auth script not yet set up, allow bypass for Admin
-    if (AUTH_SCRIPT_URL === 'YOUR_AUTH_SCRIPT_URL_HERE') {
-      devModeLogin(email||'admin@igcc.com', name||'Admin User');
-    } else {
-      showLoginError('Could not connect to authentication server.');
-    }
+    console.error('Login error:', e);
+    document.getElementById('login-error').textContent = 'Could not verify access — please try again.';
+    document.getElementById('login-error').classList.add('show');
   }
 }
 
-function devModeLogin(email, name) {
-  // Development bypass — shows all modules
-  currentUser = { employeeId:'IG0001', name, email, role:'Admin', site:'All', department:'Cost Control' };
-  userPerms   = { modules:Object.keys(ALL_MODULES), siteFilter:false, deptFilter:false, readOnly:[] };
-  sessionStorage.setItem('igcc_user', JSON.stringify({user:currentUser, perms:userPerms}));
-  launchPortal();
+function determineRole(emp) {
+  // Role determined by position/department — customize as needed
+  const pos   = (emp['Position']||'').toLowerCase();
+  const dept  = (emp['Department']||'').toLowerCase();
+  const empId = emp['Employee ID'];
+
+  // Admin list — add employee IDs of admins
+  const ADMIN_IDS = ['IG0001'];
+  if (ADMIN_IDS.includes(empId)) return 'admin';
+
+  // HR department = HR Manager role
+  if (dept.includes('human resource') || dept.includes(' hr')) return 'hr';
+
+  // Supervisor-level positions
+  if (pos.includes('manager') || pos.includes('supervisor') ||
+      pos.includes('lead') || pos.includes('director')) return 'supervisor';
+
+  return 'employee';
 }
 
-function showLoginError(msg) {
-  const el = document.getElementById('login-error');
-  el.textContent = msg;
-  el.classList.add('show');
+function parseJwt(token) {
+  const base64 = token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+  return JSON.parse(atob(base64));
 }
 
-// ── RESTORE SESSION ───────────────────────────────────────────────────────────
-function restoreSession() {
-  const saved = sessionStorage.getItem('igcc_user');
-  if (saved) {
-    try {
-      const {user, perms} = JSON.parse(saved);
-      currentUser = user; userPerms = perms;
-      launchPortal();
-      return true;
-    } catch(e) {}
-  }
-  return false;
-}
-
-// ── LAUNCH PORTAL ─────────────────────────────────────────────────────────────
-function launchPortal() {
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('portal').style.display = 'block';
-
-  // Set user info in header
-  const initials = currentUser.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-  document.getElementById('user-avatar').textContent   = initials;
-  document.getElementById('user-name').textContent     = currentUser.name;
-  const roleBadge = document.getElementById('user-role-badge');
-  roleBadge.textContent  = currentUser.role;
-  roleBadge.className    = `user-role ${ROLE_COLORS[currentUser.role]||'role-emp'}`;
-
-  // Show welcome message
-  setWelcomeMessage();
-  startClock();
-
-  // Build sidebar navigation based on permissions
-  buildSidebar();
-
-  // Build module grid
-  buildModuleGrid();
-
-  // Show admin panel link if Admin
-  if (currentUser.role === 'Admin') {
-    document.getElementById('nav-admin-section').style.display = 'block';
-    loadPortalUsers();
-  }
-
-  // Show stats for Admin/HR/Site Manager
-  if (['Admin','HR Manager','Site Manager'].includes(currentUser.role)) {
-    document.getElementById('stats-row').style.display = 'grid';
-    document.getElementById('stat-access').textContent = currentUser.role;
-  }
-}
-
-// ── SIDEBAR ───────────────────────────────────────────────────────────────────
-function buildSidebar() {
-  const modules = userPerms.modules || [];
-  const navMap = {
-    manpower: 'nav-manpower',
-    logistics:'nav-logistics',
-    ivms:     'nav-ivms',
-    registry: 'nav-registry',
-    orgchart: 'nav-orgchart',
-    leave:    'nav-leave',
+// ── DEMO LOGIN (for testing without Google OAuth) ─────────────────────────────
+function demoLogin(roleKey) {
+  const demoUsers = {
+    admin:      { name:'Mohammed Latteef', email:'m.latteef@igcc.com',       empId:'IG0001', dept:'Cost Control',  site:'BGC',    position:'Cost Control Lead',    picture:'' },
+    hr:         { name:'Sara Ahmed',       email:'s.ahmed@igcc.com',          empId:'IG0012', dept:'Human Resources',site:'HQ',   position:'HR Manager',           picture:'' },
+    supervisor: { name:'Ahmed Hassan',     email:'a.hassan@igcc.com',         empId:'IG0034', dept:'Civil',        site:'BGC',    position:'Civil Supervisor',      picture:'' },
+    employee:   { name:'Khalid Nasser',    email:'k.nasser@igcc.com',         empId:'IG0089', dept:'Civil',        site:'BGC',    position:'Site Engineer',         picture:'' },
   };
-  Object.entries(navMap).forEach(([mod, navId]) => {
-    const el = document.getElementById(navId);
-    if (el && modules.includes(mod)) el.classList.remove('hidden');
+  loginUser(demoUsers[roleKey], roleKey);
+}
+
+// ── LOGIN USER ────────────────────────────────────────────────────────────────
+function loginUser(user, roleKey) {
+  currentUser = user;
+  currentRole = roleKey;
+
+  // Store session
+  sessionStorage.setItem('igcc_user', JSON.stringify({ user, roleKey }));
+
+  // Hide login, show portal
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('portal').classList.add('active');
+
+  // Set user info in sidebar
+  const initials = user.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const avatarEl = document.getElementById('sidebar-avatar');
+  if (user.picture) {
+    avatarEl.innerHTML = `<img src="${user.picture}" alt="${user.name}">`;
+  } else {
+    avatarEl.textContent = initials;
+  }
+  document.getElementById('sidebar-username').textContent = user.name;
+  document.getElementById('sidebar-role').textContent     = ROLES[roleKey].label;
+
+  // Build nav
+  buildNav(roleKey);
+
+  // Show dashboard
+  showDashboard();
+}
+
+// ── BUILD NAV ────────────────────────────────────────────────────────────────
+function buildNav(roleKey) {
+  const access = ROLES[roleKey].access;
+  const nav    = document.getElementById('sidebar-nav');
+  nav.innerHTML = '';
+
+  // Dashboard link
+  const dashItem = document.createElement('div');
+  dashItem.className = 'nav-item active';
+  dashItem.id = 'nav-dashboard';
+  dashItem.onclick = () => { showDashboard(); setActiveNav('dashboard'); };
+  dashItem.innerHTML = `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard`;
+  nav.appendChild(dashItem);
+
+  NAV_SECTIONS.forEach(section => {
+    const hasVisible = section.ids.some(id => access[id] !== null);
+    if (!hasVisible) return;
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'nav-section-title';
+    titleEl.textContent = section.title;
+    nav.appendChild(titleEl);
+
+    section.ids.forEach(moduleId => {
+      const level  = access[moduleId];
+      const module = MODULES.find(m=>m.id===moduleId);
+      if (!module) return;
+
+      const item = document.createElement('div');
+      item.className = `nav-item${level===null?' locked':''}`;
+      item.id = `nav-${moduleId}`;
+      if (level !== null) {
+        item.onclick = () => { openModule(moduleId); setActiveNav(moduleId); };
+      }
+      item.innerHTML = `<span style="font-size:15px;">${module.icon}</span>${module.title}
+        ${level==='view'?'<span class="nav-badge">View</span>':''}
+        ${level==='own'?'<span class="nav-badge">Own</span>':''}`;
+      nav.appendChild(item);
+    });
   });
 }
 
-// ── MODULE GRID ───────────────────────────────────────────────────────────────
-function buildModuleGrid() {
-  const grid    = document.getElementById('module-grid');
-  const modules = userPerms.modules || [];
-  const readOnly= userPerms.readOnly || [];
-  grid.innerHTML = '';
+function setActiveNav(id) {
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById(`nav-${id}`);
+  if (el) el.classList.add('active');
+}
 
-  Object.values(ALL_MODULES).forEach(mod => {
-    const hasAccess = modules.includes(mod.key);
-    const isRO      = readOnly.includes(mod.key);
-    const isComing  = mod.coming;
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+function showDashboard() {
+  activeModule = 'dashboard';
+  document.getElementById('topbar-title').textContent = 'Dashboard';
+  document.getElementById('topbar-sub').textContent   = '';
 
-    const card = document.createElement('div');
-    card.className = `module-card${!hasAccess?' locked':''}`;
-    card.innerHTML = `
-      <div class="module-icon" style="background:${mod.color}">${mod.icon}</div>
-      <div class="module-name">${mod.name}</div>
-      <div class="module-desc">${mod.desc}</div>
-      ${isComing    ? '<span class="module-badge" style="position:absolute;top:14px;right:14px;background:#f1f5f9;color:var(--muted);border:1px solid var(--border);font-size:10px;font-family:var(--mono);padding:2px 7px;border-radius:10px;">Coming soon</span>' :
-        isRO        ? '<span class="module-badge badge-ro" style="position:absolute;top:14px;right:14px;">Read only</span>' :
-        hasAccess   ? '<span class="module-badge badge-live" style="position:absolute;top:14px;right:14px;">Live</span>' :
-                      '<span class="module-badge badge-locked" style="position:absolute;top:14px;right:14px;">🔒 No access</span>'}`;
+  const roleKey  = currentRole;
+  const access   = ROLES[roleKey].access;
+  const roleData = ROLES[roleKey];
+  const badge    = `<span class="role-badge ${roleData.badgeClass}">${roleData.label}</span>`;
+  document.getElementById('topbar-role-badge').innerHTML = badge;
 
-    if (hasAccess && !isComing) {
-      card.onclick = () => openModule(mod.key);
-    }
-    grid.appendChild(card);
-  });
+  const today = new Date().toLocaleDateString('en-GB',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const accessibleModules = MODULES.filter(m => access[m.id] !== null);
+
+  const accessLabel = { full:'Full access', view:'View only', own:'Own data' };
+
+  const content = document.getElementById('main-content');
+  content.innerHTML = `
+    <div class="dashboard-greeting">Welcome back, ${currentUser.name.split(' ')[0]} 👋</div>
+    <div class="dashboard-date">${today} · ${currentUser.empId||''} · ${currentUser.dept||''}</div>
+
+    <div class="modules-grid">
+      ${accessibleModules.map(m => {
+        const level = access[m.id];
+        return `<div class="module-card" style="--card-color:${m.color}" onclick="openModule('${m.id}');setActiveNav('${m.id}')">
+          <div class="module-icon" style="background:${m.color}20;">${m.icon}</div>
+          <div class="module-title">${m.title}</div>
+          <div class="module-desc">${m.desc}</div>
+          <span class="module-access access-${level}">${accessLabel[level]||level}</span>
+        </div>`;
+      }).join('')}
+    </div>
+
+    ${roleKey==='admin'||roleKey==='hr'?`
+    <div class="stats-row" id="stats-row">
+      <div class="stat-card"><div class="stat-num" id="stat-emp">—</div><div class="stat-label">Total employees</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-active">—</div><div class="stat-label">Active</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-sites">—</div><div class="stat-label">Sites</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-depts">—</div><div class="stat-label">Departments</div></div>
+    </div>`:''}`;
+
+  // Load stats for admin/HR
+  if (roleKey==='admin'||roleKey==='hr') loadDashboardStats();
+}
+
+async function loadDashboardStats() {
+  try {
+    const res  = await fetch(`${HR_SCRIPT_URL}?action=read`);
+    const json = await res.json();
+    const data = json.data||[];
+    document.getElementById('stat-emp').textContent    = data.length;
+    document.getElementById('stat-active').textContent = data.filter(e=>e['Status']==='Active').length;
+    document.getElementById('stat-sites').textContent  = new Set(data.map(e=>e['Site']).filter(Boolean)).size;
+    document.getElementById('stat-depts').textContent  = new Set(data.map(e=>e['Department']).filter(Boolean)).size;
+  } catch(e) { console.error('Stats load failed:', e); }
 }
 
 // ── OPEN MODULE ───────────────────────────────────────────────────────────────
-function openModule(key) {
-  const mod = ALL_MODULES[key];
-  if (!mod) return;
-  if (mod.coming) { alert('This module is coming soon.'); return; }
+function openModule(moduleId) {
+  const access = ROLES[currentRole].access;
+  const level  = access[moduleId];
+  const module = MODULES.find(m=>m.id===moduleId);
+  if (!module || level===null) return;
 
-  // Set active sidebar item
-  document.querySelectorAll('.sidebar-item').forEach(i=>i.classList.remove('active'));
-  document.getElementById(`nav-${key}`)?.classList.add('active');
+  activeModule = moduleId;
+  document.getElementById('topbar-title').textContent = module.title;
+  document.getElementById('topbar-sub').textContent   = { full:'Full access', view:'View only', own:'Your data only' }[level]||'';
 
-  document.getElementById('view-home').classList.add('hidden');
-  document.getElementById('view-admin').classList.add('hidden');
-  document.getElementById('view-module').classList.remove('hidden');
-  document.getElementById('frame-title').textContent = mod.name;
+  const url = MODULE_URLS[moduleId];
+  const content = document.getElementById('main-content');
 
-  const badge = document.getElementById('frame-badge');
-  const isRO  = (userPerms.readOnly||[]).includes(key);
-  badge.textContent  = isRO ? 'Read only' : 'Live';
-  badge.className    = `module-badge ${isRO?'badge-ro':'badge-live'}`;
-  badge.style.position = 'static';
-
-  // Load iframe
-  const iframe = document.getElementById('module-iframe');
-  // Append user context as URL params
-  const url = new URL(mod.url, window.location.href);
-  url.searchParams.set('role',       currentUser.role);
-  url.searchParams.set('site',       currentUser.site||'');
-  url.searchParams.set('dept',       currentUser.department||'');
-  url.searchParams.set('empId',      currentUser.employeeId||'');
-  url.searchParams.set('readonly',   isRO?'1':'0');
-  iframe.src = url.toString();
-
-  // Log access
-  logAccess(key);
-}
-
-// ── HOME ──────────────────────────────────────────────────────────────────────
-function showHome() {
-  document.querySelectorAll('.sidebar-item').forEach(i=>i.classList.remove('active'));
-  document.getElementById('nav-home')?.classList.add('active');
-  document.getElementById('view-home').classList.remove('hidden');
-  document.getElementById('view-module').classList.add('hidden');
-  document.getElementById('view-admin').classList.add('hidden');
-  document.getElementById('module-iframe').src = '';
-}
-
-// ── ADMIN PANEL ───────────────────────────────────────────────────────────────
-function showAdminPanel() {
-  document.querySelectorAll('.sidebar-item').forEach(i=>i.classList.remove('active'));
-  document.getElementById('nav-users')?.classList.add('active');
-  document.getElementById('view-home').classList.add('hidden');
-  document.getElementById('view-module').classList.add('hidden');
-  document.getElementById('view-admin').classList.remove('hidden');
-}
-
-async function loadPortalUsers() {
-  try {
-    const res  = await fetch(`${AUTH_SCRIPT_URL}?action=get_users`);
-    const json = await res.json();
-    renderUsersTable(json.data||[]);
-  } catch(e) { console.error('Could not load users'); }
-}
-
-function renderUsersTable(users) {
-  const tbody = document.getElementById('users-table-body');
-  if (!users.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px;">No users registered yet</td></tr>';
+  if (!url || url.includes('igcc_leave.html')) {
+    // Module not yet built
+    content.innerHTML = `<div class="access-denied">
+      <div class="access-denied-icon">${module.icon}</div>
+      <div class="access-denied-title">${module.title}</div>
+      <div class="access-denied-sub">This module is coming soon. Check back later.</div>
+    </div>`;
     return;
   }
-  tbody.innerHTML = users.map(u => `
-    <tr>
-      <td style="font-family:var(--mono);font-size:12px;color:var(--accent);">${u['Employee ID']||'—'}</td>
-      <td style="font-weight:500;">${u['Full Name']||'—'}</td>
-      <td style="font-size:12px;">${u['Email']||'—'}</td>
-      <td><span class="badge-role ${ROLE_COLORS[u['Role']]||'role-emp'}" style="font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:10px;">${u['Role']||'—'}</span></td>
-      <td style="font-size:12px;">${u['Site']||'—'}</td>
-      <td><span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${u['Status']==='Active'?'rgba(22,163,74,.1)':'rgba(220,38,38,.08)'};color:${u['Status']==='Active'?'var(--success)':'var(--danger)'};">${u['Status']||'Active'}</span></td>
-      <td style="font-size:11px;font-family:var(--mono);color:var(--muted);">${u['Last Login']?u['Last Login'].slice(0,10):'Never'}</td>
-      <td><button class="btn-sm" onclick="deactivateUser('${u['Email']}')">Deactivate</button></td>
-    </tr>`).join('');
+
+  // Load in iframe
+  content.innerHTML = `
+    <div style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:var(--shadow);height:calc(100vh - 130px);">
+      <iframe src="${url}" style="width:100%;height:100%;border:none;" title="${module.title}"></iframe>
+    </div>`;
 }
 
-async function addPortalUser() {
-  const email = document.getElementById('new-email').value.trim();
-  const role  = document.getElementById('new-role').value;
-  if (!email||!role) { alert('Email and role are required'); return; }
-
-  const data = {
-    'Employee ID': document.getElementById('new-empid').value.trim(),
-    'Full Name':   document.getElementById('new-name').value.trim(),
-    'Email':       email,
-    'Role':        role,
-    'Site':        document.getElementById('new-site').value.trim(),
-    'Department':  document.getElementById('new-dept').value.trim(),
-    'Status':      'Active',
-  };
-
-  try {
-    await new Promise(resolve => {
-      const iframe = document.getElementById('auth-frame') || (() => {
-        const f=document.createElement('iframe'); f.id='auth-frame';
-        f.style.display='none'; document.body.appendChild(f); return f;
-      })();
-      const form = document.createElement('form');
-      form.method='POST'; form.action=AUTH_SCRIPT_URL;
-      form.target='auth-frame'; form.style.display='none';
-      const inp=document.createElement('input');
-      inp.type='hidden'; inp.name='payload';
-      inp.value=JSON.stringify({...data, action:'add_user'});
-      // Send action via separate param
-      const act=document.createElement('input');
-      act.type='hidden'; act.name='action'; act.value='add_user';
-      form.appendChild(inp); form.appendChild(act);
-      document.body.appendChild(form); form.submit();
-      document.body.removeChild(form);
-      setTimeout(resolve, 2500);
-    });
-    ['new-empid','new-name','new-email','new-site','new-dept'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('new-role').value='';
-    await loadPortalUsers();
-    alert(`✓ ${data['Full Name']||email} added as ${role}`);
-  } catch(e) { alert('Could not add user'); }
-}
-
-async function deactivateUser(email) {
-  if (!confirm(`Deactivate ${email}?`)) return;
-  try {
-    await fetch(`${AUTH_SCRIPT_URL}?action=deactivate_user&email=${encodeURIComponent(email)}`);
-    await loadPortalUsers();
-  } catch(e) { alert('Could not deactivate user'); }
-}
-
-// ── ACCESS LOG ────────────────────────────────────────────────────────────────
-function logAccess(module) {
-  if (AUTH_SCRIPT_URL === 'YOUR_AUTH_SCRIPT_URL_HERE') return;
-  const payload = {
-    email:      currentUser.email,
-    employeeId: currentUser.employeeId,
-    action:     'open_module',
-    module,
-    details:    `${currentUser.role} opened ${module}`
-  };
-  fetch(`${AUTH_SCRIPT_URL}?action=log_access&payload=${encodeURIComponent(JSON.stringify(payload))}`)
-    .catch(()=>{});
-}
-
-// ── CLOCK & WELCOME ───────────────────────────────────────────────────────────
-function setWelcomeMessage() {
-  const hr  = new Date().getHours();
-  const msg = hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';
-  document.getElementById('welcome-msg').textContent = `${msg}, ${currentUser.name.split(' ')[0]}`;
-  document.getElementById('welcome-sub').textContent =
-    `You are signed in as ${currentUser.role}${currentUser.site&&currentUser.site!=='All'?' · '+currentUser.site:''}.`;
-}
-
-function startClock() {
-  const tick = () => {
-    const now = new Date();
-    document.getElementById('live-time').textContent =
-      now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Baghdad'});
-  };
-  tick();
-  setInterval(tick, 1000);
-}
-
-// ── LOGOUT ────────────────────────────────────────────────────────────────────
-function logout() {
+// ── SIGN OUT ──────────────────────────────────────────────────────────────────
+function signOut() {
+  currentUser = null;
+  currentRole = null;
   sessionStorage.removeItem('igcc_user');
-  currentUser = null; userPerms = null;
-  document.getElementById('portal').style.display = 'none';
+  document.getElementById('portal').classList.remove('active');
   document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('module-iframe').src = '';
   document.getElementById('login-error').classList.remove('show');
+  if (GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID') {
+    google.accounts.id.disableAutoSelect();
+  }
 }
 
-// ── BOOT ──────────────────────────────────────────────────────────────────────
-if (!restoreSession()) {
-  // Show login — Google button renders automatically
-  // Dev mode: if no client ID configured, show bypass button
-  if (document.getElementById('g_id_onload')
-      .dataset.clientId === '392743906594-f4huq0l2hf3b71tpn5hh4eba5ftt9ti0.apps.googleusercontent.com') {
-    const devBtn = document.createElement('button');
-    devBtn.textContent = 'Dev mode — enter as Admin';
-    devBtn.style.cssText = 'margin-top:16px;width:100%;padding:10px;background:#0f172a;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;';
-    devBtn.onclick = () => devModeLogin('admin@igcc.com','Admin User');
-    document.querySelector('.login-card').appendChild(devBtn);
-  }
+// ── RESTORE SESSION ───────────────────────────────────────────────────────────
+const saved = sessionStorage.getItem('igcc_user');
+if (saved) {
+  try {
+    const { user, roleKey } = JSON.parse(saved);
+    loginUser(user, roleKey);
+  } catch(e) { sessionStorage.removeItem('igcc_user'); }
 }
 </script>
 </body>
